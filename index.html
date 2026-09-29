@@ -225,7 +225,34 @@
         .card .name { font-size: 1.05rem; }
         .help { display: none; }
     }
+    /* ---------- Comète : signal qui fait le tour de l'écran en lecture ---------- */
+    .orbit {
+        position: fixed;
+        z-index: 50;
+        pointer-events: none;
+        top: 0; left: 0;
+        width: 0.55rem; height: 0.55rem;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0.6rem var(--accent), 0 0 1.4rem var(--accent);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        will-change: transform;
+    }
+    .orbit.on { opacity: 1; }
+    .orbit .trail {
+        position: absolute;
+        right: 0.55rem; top: 50%;
+        width: 2.6rem; height: 0.18rem;
+        transform: translateY(-50%);
+        border-radius: 0.1rem;
+        transform-origin: right center;
+        background: linear-gradient(to right, rgba(92, 225, 198, 0.85), transparent);
+        filter: blur(0.1rem);
+    }
+
     @media (prefers-reduced-motion: reduce) {
+        .orbit { display: none !important; }
         * { animation: none !important; transition: none !important; }
     }
 </style>
@@ -257,17 +284,19 @@
     <div class="grid" id="grid" role="list"></div>
 
     <div class="help">
-        <span><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M5 12l4-4M5 12l4 4M19 12l-4-4M19 12l-4 4"/></svg>Flèches : naviguer</span>
+        <span><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M5 12l4-4M5 12l4 4M19 12l-4-4M19 12l-4 4"/></svg>D-pad : naviguer</span>
         <span><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/></svg>OK : écouter</span>
         <span><svg class="ico" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>Lecture / pause : lancer ou arrêter</span>
+        <span><svg class="ico" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Retour : arrêter la lecture</span>
     </div>
 </main>
 
 <audio id="audio" preload="none"></audio>
 
+<div class="orbit" id="orbit"><span class="trail"></span></div>
+
 <script>
-/* ---------- Stations ----------
-   urls : liste de flux essayés dans l'ordre (bascule auto si l'un ne répond pas) */
+/* ---------- Stations ---------- */
 const stations = [
     { id: 'chantefrance', nom: 'Chante France', genre: 'Chanson française', urls: [
         'https://chantefrance.ice.infomaniak.ch/chantefrance-128.mp3',
@@ -339,7 +368,9 @@ stations.forEach(s => {
     const b = document.createElement('button');
     b.className = 'card focusable';
     b.id = 'card-' + s.id;
+    b.type = 'button'; /* évite tout soumission implicite sur certains navigateurs TV */
     b.setAttribute('role', 'listitem');
+    b.setAttribute('tabindex', '0');
     b.innerHTML =
         '<span class="mini"><i></i><i></i><i></i></span>' +
         '<span class="name"></span><span class="genre"></span>';
@@ -354,6 +385,7 @@ function setStatus(state, text) {
     status.className = 'status' + (state ? ' ' + state : '');
     status.textContent = text;
     const on = state === 'live';
+    setOrbit(on);
     eq.classList.toggle('on', on);
     icoPlay.style.display = (state === 'live' || state === 'load') ? 'none' : 'block';
     icoStop.style.display = (state === 'live' || state === 'load') ? 'block' : 'none';
@@ -472,7 +504,28 @@ function updateMediaSession(s) {
     } catch (e) {}
 }
 
-/* ---------- Navigation à la télécommande (flèches) ---------- */
+/* ---------- Navigation télécommande (Chromecast / Google TV) ----------
+   Sur les navigateurs TV, e.key vaut souvent "Unidentified" ou undefined :
+   on identifie donc chaque touche par e.key OU e.keyCode.
+   D-pad = flèches (37-40), OK = Enter (13) ou Espace, Retour = Escape (27)
+   ou Backspace (8) ou touche 461 (Back des TV). */
+function keyId(e) {
+    const k = e.key, c = e.keyCode;
+    if (k === 'ArrowRight' || c === 39) return 'right';
+    if (k === 'ArrowLeft'  || c === 37) return 'left';
+    if (k === 'ArrowDown'  || c === 40) return 'down';
+    if (k === 'ArrowUp'    || c === 38) return 'up';
+    if (k === 'Enter' || k === 'NumpadEnter' || k === ' ' || k === 'Spacebar' || c === 13 || c === 32) return 'ok';
+    if (k === 'MediaPlayPause' || c === 179) return 'playpause';
+    if (k === 'MediaPlay') return 'play';
+    if (k === 'MediaPause') return 'pause';
+    if (k === 'MediaStop'  || c === 178) return 'stop';
+    if (k === 'MediaTrackNext'     || c === 176 || k === 'ChannelUp'   || c === 427) return 'next';
+    if (k === 'MediaTrackPrevious' || c === 177 || k === 'ChannelDown' || c === 428) return 'prev';
+    if (k === 'Escape' || k === 'GoBack' || c === 27 || c === 8 || c === 461 || c === 10009) return 'back';
+    return null;
+}
+
 function focusables() { return Array.from(document.querySelectorAll('.focusable')); }
 function focusCard(id) {
     const el = document.getElementById('card-' + id);
@@ -522,27 +575,65 @@ function moveFocus(dir) {
 }
 
 document.addEventListener('keydown', e => {
-    const map = { ArrowRight: 'right', ArrowLeft: 'left', ArrowDown: 'down', ArrowUp: 'up' };
-    if (map[e.key]) { e.preventDefault(); moveFocus(map[e.key]); return; }
+    const id = keyId(e);
+    if (!id) return;
+    e.preventDefault();
 
-    switch (e.key) {
-        case 'MediaPlayPause':
-        case 'MediaPlay':
-        case 'MediaPause':
-            e.preventDefault(); toggle(); break;
-        case 'MediaStop':
-            e.preventDefault(); stopAudio(); break;
-        case 'MediaTrackNext':
-        case 'ChannelUp':
-        case 'PageDown':
-            e.preventDefault(); step(1); break;
-        case 'MediaTrackPrevious':
-        case 'ChannelDown':
-        case 'PageUp':
-            e.preventDefault(); step(-1); break;
+    switch (id) {
+        case 'right': moveFocus('right'); return;
+        case 'left':  moveFocus('left');  return;
+        case 'down':  moveFocus('down');  return;
+        case 'up':    moveFocus('up');    return;
+        case 'ok':
+            // OK : active l'élément focalisé (certains navigateurs TV ne
+            // génèrent pas de "click" natif sur Enter depuis la télécommande)
+            if (document.activeElement && document.activeElement.classList.contains('focusable')) {
+                document.activeElement.click();
+            }
+            return;
+        case 'playpause': case 'play': case 'pause': toggle(); return;
+        case 'stop': stopAudio(); return;
+        case 'next': step(1); return;
+        case 'prev': step(-1); return;
+        case 'back':
+            // Touche Retour de la télécommande : arrête la lecture si active
+            if (isActive()) stopAudio();
+            return;
     }
-    // Entrée / OK : le bouton sélectionné gère déjà le clic nativement
 });
+
+/* ---------- Comète : le signal fait le tour de l'écran pendant la lecture ---------- */
+const orbit = document.getElementById('orbit');
+let orbitOn = false, orbitStart = 0;
+
+function setOrbit(on) {
+    if (on === orbitOn) return;
+    orbitOn = on;
+    orbit.classList.toggle('on', on);
+    if (on) { orbitStart = performance.now(); requestAnimationFrame(orbitFrame); }
+}
+
+function orbitFrame(now) {
+    if (!orbitOn) return;
+    const W = window.innerWidth, H = window.innerHeight;
+    const pad = 0.9;                 /* marge par rapport au bord (rem) */
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const m = pad * rem;
+    const w = W - 2 * m, h = H - 2 * m;
+    const per = 2 * (w + h);         /* périmètre intérieur */
+    const speed = per / 14;          /* un tour complet en ~14 s */
+    let d = ((now - orbitStart) / 1000 * speed) % per;
+
+    /* position + direction du trajet le long du rectangle */
+    let x, y, ang;
+    if (d < w)              { x = m + d;          y = m;          ang = 0;   }
+    else if (d < w + h)     { x = m + w;          y = m + d - w;  ang = 90;  }
+    else if (d < 2 * w + h) { x = m + w - (d - w - h); y = m + h;  ang = 180; }
+    else                    { x = m;              y = m + h - (d - 2 * w - h); ang = 270; }
+
+    orbit.style.transform = 'translate(' + x + 'px,' + y + 'px) rotate(' + ang + 'deg)';
+    requestAnimationFrame(orbitFrame);
+}
 
 /* ---------- Curseur masqué quand la souris ne bouge plus ---------- */
 let idleTimer;
