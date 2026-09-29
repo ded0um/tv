@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1120">
+<title>Radios</title>
+<style>
+    :root {
+        --bg: #0b1120;
+        --surface: #141c33;
+        --surface-2: #1b2544;
+        --line: #2a3760;
+        --text: #f4f6ff;
+        --dim: #9aa7cc;
+        --accent: #5ce1c6;
+        --accent-soft: rgba(92, 225, 198, 0.14);
+        --warn: #ffb454;
+        --err: #ff7a8a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: clamp(16px, 1.55vw, 30px); }
+    body {
+        font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100dvh;
+        padding: 0 4vw 5vh;
+        -webkit-tap-highlight-color: transparent;
+    }
+    body.idle { cursor: none; }
+
+    button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-align: inherit;
+    }
+    button:focus { outline: none; }
+
+    svg.ico {
+        width: 1em; height: 1em;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+    }
+
+    /* En-tête + lecteur (collés en haut) */
+    .top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: linear-gradient(var(--bg) 82%, rgba(11, 17, 32, 0));
+        padding: 3vh 0 2.4vh;
+    }
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: var(--dim);
+        font-size: 1.05rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        margin-bottom: 1.4vh;
+    }
+    .brand .ico { font-size: 1.5rem; color: var(--accent); }
+
+    .player {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        padding: 1.1rem 1.4rem;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 1.1rem;
+    }
+    .now { min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    .now-name {
+        font-size: 1.9rem;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .now-name.empty { color: var(--dim); font-weight: 500; }
+    .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+        color: var(--dim);
+    }
+    .status::before {
+        content: "";
+        width: 0.6rem; height: 0.6rem;
+        border-radius: 50%;
+        background: var(--dim);
+    }
+    .status.live { color: var(--accent); }
+    .status.live::before { background: var(--accent); }
+    .status.load { color: var(--warn); }
+    .status.load::before { background: var(--warn); animation: pulse 1s infinite alternate; }
+    .status.err { color: var(--err); }
+    .status.err::before { background: var(--err); }
+    @keyframes pulse { to { opacity: 0.25; } }
+
+    .player-right { display: flex; align-items: center; gap: 1.4rem; }
+
+    .eq { display: flex; align-items: flex-end; gap: 4px; height: 1.6rem; }
+    .eq i {
+        display: block;
+        width: 5px; height: 4px;
+        border-radius: 3px;
+        background: var(--dim);
+    }
+    .eq.on i { background: var(--accent); animation: bounce 0.9s infinite ease-in-out alternate; }
+    .eq.on i:nth-child(1) { animation-delay: 0.0s; }
+    .eq.on i:nth-child(2) { animation-delay: 0.35s; }
+    .eq.on i:nth-child(3) { animation-delay: 0.15s; }
+    .eq.on i:nth-child(4) { animation-delay: 0.5s; }
+    .eq.on i:nth-child(5) { animation-delay: 0.25s; }
+    @keyframes bounce { from { height: 4px; } to { height: 1.6rem; } }
+
+    .btn-main {
+        width: 4.2rem; height: 4.2rem;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+        color: var(--accent);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.9rem;
+        transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+
+    /* Grille */
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
+        gap: 1rem;
+        padding-top: 0.6vh;
+    }
+    .card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.35rem;
+        min-height: 6.2rem;
+        padding: 1rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        scroll-margin-top: 14rem;
+        scroll-margin-bottom: 3rem;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .card .name { font-size: 1.3rem; font-weight: 650; }
+    .card .genre { font-size: 0.85rem; color: var(--dim); }
+
+    .card.playing { background: var(--accent-soft); border-color: rgba(92, 225, 198, 0.55); }
+    .card.playing .name { color: var(--accent); }
+
+    /* Mini égaliseur sur la carte en lecture */
+    .card .mini {
+        display: none;
+        position: absolute;
+        top: 0.9rem; right: 1rem;
+        align-items: flex-end;
+        gap: 3px;
+        height: 0.9rem;
+    }
+    .card.playing.live .mini { display: flex; }
+    .mini i {
+        display: block;
+        width: 3px; height: 3px;
+        border-radius: 2px;
+        background: var(--accent);
+        animation: mini 0.7s infinite ease-in-out alternate;
+    }
+    .mini i:nth-child(2) { animation-delay: 0.25s; }
+    .mini i:nth-child(3) { animation-delay: 0.1s; }
+    @keyframes mini { from { height: 3px; } to { height: 0.9rem; } }
+
+    /* Focus télécommande : bien visible à distance */
+    .card:focus {
+        transform: scale(1.06);
+        background: var(--surface-2);
+        border-color: var(--text);
+        box-shadow: 0 0 0 3px var(--text), 0 1rem 2rem rgba(0, 0, 0, 0.45);
+        z-index: 2;
+    }
+    .card.playing:focus { background: #1c3b45; }
+    .btn-main:focus {
+        transform: scale(1.12);
+        background: var(--accent);
+        color: var(--bg);
+        box-shadow: 0 0 0 3px var(--text);
+    }
+
+    .help {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.6rem;
+        margin-top: 3vh;
+        padding-top: 2vh;
+        border-top: 1px solid var(--line);
+        color: var(--dim);
+        font-size: 0.85rem;
+    }
+    .help span { display: inline-flex; align-items: center; gap: 0.5rem; }
+    .help .ico { font-size: 1.1rem; }
+
+    @media (max-width: 640px) {
+        html { font-size: 16px; }
+        .player { padding: 0.9rem 1rem; }
+        .now-name { font-size: 1.3rem; }
+        .eq { display: none; }
+        .grid { grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+        .card { min-height: 5rem; padding: 0.8rem; scroll-margin-top: 11rem; }
+        .card .name { font-size: 1.05rem; }
+        .help { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; transition: none !important; }
+    }
+</style>
+</head>
+<body>
+
+<header class="top">
+    <div class="brand">
+        <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8l10-5"/><circle cx="9" cy="14" r="2.5"/><path d="M15 12h3M15 16h3"/></svg>
+        Radios
+    </div>
+
+    <div class="player">
+        <div class="now">
+            <div class="now-name empty" id="nowName">Choisissez une station</div>
+            <div class="status" id="status">Hors ligne</div>
+        </div>
+        <div class="player-right">
+            <div class="eq" id="eq"><i></i><i></i><i></i><i></i><i></i></div>
+            <button class="btn-main focusable" id="btnMain" aria-label="Lecture / Arrêt">
+                <svg class="ico" id="icoPlay" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>
+                <svg class="ico" id="icoStop" viewBox="0 0 24 24" style="display:none"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="grid" id="grid" role="list"></div>
+
+    <div class="help">
+        <span><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M5 12l4-4M5 12l4 4M19 12l-4-4M19 12l-4 4"/></svg>Flèches : naviguer</span>
+        <span><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/></svg>OK : écouter</span>
+        <span><svg class="ico" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>Lecture / pause : lancer ou arrêter</span>
+    </div>
+</main>
+
+<audio id="audio" preload="none"></audio>
+
+<script>
+/* ---------- Stations ----------
+   urls : liste de flux essayés dans l'ordre (bascule auto si l'un ne répond pas) */
+const stations = [
+    { id: 'chantefrance', nom: 'Chante France', genre: 'Chanson française', urls: [
+        'https://chantefrance.ice.infomaniak.ch/chantefrance-128.mp3',
+        'https://stream.chantefrance.com/'
+    ]},
+    { id: 'cheriefm', nom: 'Chérie FM', genre: 'Pop / Love', urls: [
+        'https://streaming.nrjaudio.fm/ouuku85n3nje'
+    ]},
+    { id: 'europe1', nom: 'Europe 1', genre: 'Talk / Info', urls: [
+        'https://europe1.lmn.fm/europe1.mp3',
+        'http://mp3lg3.scdn.arkena.com/10489/europe1.mp3'
+    ]},
+    { id: 'europe2', nom: 'Europe 2', genre: 'Pop / Rock', urls: [
+        'https://europe2.lmn.fm/europe2.mp3'
+    ]},
+    { id: 'francebleu', nom: 'France Bleu', genre: 'Info / Proximité', urls: [
+        'https://icecast.radiofrance.fr/fbidf-midfi.mp3'
+    ]},
+    { id: 'funradio', nom: 'Fun Radio', genre: 'Dance / Hits', urls: [
+        'https://icecast.funradio.fr/fun-1-44-128?listen=webCwsBCggNCQgLDQUGBAcGBg',
+        'http://streaming.radio.funradio.fr/fun-1-44-128'
+    ]},
+    { id: 'nostalgie', nom: 'Nostalgie', genre: 'Variété / Oldies', urls: [
+        'https://streaming.nrjaudio.fm/oug7girb92oc'
+    ]},
+    { id: 'nrj', nom: 'NRJ', genre: 'Hits / Pop', urls: [
+        'https://streaming.nrjaudio.fm/oumvmk8fnozc'
+    ]},
+    { id: 'ouifm', nom: 'OUI FM', genre: 'Rock', urls: [
+        'https://ouifm.ice.infomaniak.ch/ouifm-high.mp3'
+    ]},
+    { id: 'rfm', nom: 'RFM', genre: 'Pop / Rock', urls: [
+        'https://stream.rfm.fr/rfm.mp3',
+        'http://rfm-live-mp3-128.scdn.arkena.com/rfm.mp3'
+    ]},
+    { id: 'rireetchansons', nom: 'Rire & Chansons', genre: 'Humour / Sketches', urls: [
+        'https://streaming.nrjaudio.fm/ou8o8xgk7oiu',
+        'https://streaming.nrjaudio.fm/oug7girb92oc'
+    ]},
+    { id: 'rmc', nom: 'RMC', genre: 'Talk / Info / Sport', urls: [
+        'https://audio.bfmtv.com/rmcradio_128.mp3'
+    ]},
+    { id: 'rtl2', nom: 'RTL2', genre: 'Pop / Rock', urls: [
+        'https://icecast.rtl2.fr/rtl2-1-44-128?listen=webCwsBCggNCQgLDQUGBAcGBg',
+        'http://streaming.radio.rtl2.fr/rtl2-1-44-128?listen=webCwsBCggNCQgLDQUGBAcGBg'
+    ]},
+    { id: 'skyrock', nom: 'Skyrock', genre: 'Rap / R&B', urls: [
+        'https://icecast.skyrock.net/s/natio_mp3_128k'
+    ]}
+];
+stations.sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+
+/* ---------- Éléments ---------- */
+const audio   = document.getElementById('audio');
+const grid    = document.getElementById('grid');
+const nowName = document.getElementById('nowName');
+const status  = document.getElementById('status');
+const eq      = document.getElementById('eq');
+const btnMain = document.getElementById('btnMain');
+const icoPlay = document.getElementById('icoPlay');
+const icoStop = document.getElementById('icoStop');
+
+let currentId = null;
+let urlIndex  = 0;
+let wakeLock  = null;
+
+/* ---------- Construction de la grille ---------- */
+stations.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'card focusable';
+    b.id = 'card-' + s.id;
+    b.setAttribute('role', 'listitem');
+    b.innerHTML =
+        '<span class="mini"><i></i><i></i><i></i></span>' +
+        '<span class="name"></span><span class="genre"></span>';
+    b.querySelector('.name').textContent = s.nom;
+    b.querySelector('.genre').textContent = s.genre;
+    b.addEventListener('click', () => playStation(s.id));
+    grid.appendChild(b);
+});
+
+/* ---------- Interface ---------- */
+function setStatus(state, text) {
+    status.className = 'status' + (state ? ' ' + state : '');
+    status.textContent = text;
+    const on = state === 'live';
+    eq.classList.toggle('on', on);
+    icoPlay.style.display = (state === 'live' || state === 'load') ? 'none' : 'block';
+    icoStop.style.display = (state === 'live' || state === 'load') ? 'block' : 'none';
+    document.querySelectorAll('.card').forEach(c => {
+        c.classList.toggle('playing', c.id === 'card-' + currentId && (state === 'live' || state === 'load'));
+        c.classList.toggle('live', on);
+    });
+}
+
+function isActive() { return !!audio.getAttribute('src'); }
+
+/* ---------- Lecture ---------- */
+function playStation(id) {
+    const s = stations.find(x => x.id === id);
+    if (!s) return;
+    currentId = id;
+    urlIndex = 0;
+    try { localStorage.setItem('radio:last', id); } catch (e) {}
+    nowName.textContent = s.nom;
+    nowName.classList.remove('empty');
+    startCurrent();
+    updateMediaSession(s);
+}
+
+function startCurrent() {
+    const s = stations.find(x => x.id === currentId);
+    if (!s) return;
+    setStatus('load', 'Connexion…');
+    audio.src = s.urls[urlIndex];
+    audio.load();
+    const p = audio.play();
+    if (p) p.catch(err => {
+        if (err && err.name === 'AbortError') return; // changement de station rapide
+        if (err && err.name === 'NotAllowedError') { setStatus('err', 'Lecture bloquée : appuyez sur OK'); return; }
+        tryNextUrl();
+    });
+    requestWake();
+}
+
+function tryNextUrl() {
+    const s = stations.find(x => x.id === currentId);
+    if (!s) return;
+    if (urlIndex < s.urls.length - 1) {
+        urlIndex++;
+        startCurrent();
+    } else {
+        stopAudio(true);
+        setStatus('err', 'Flux indisponible');
+    }
+}
+
+function stopAudio(keepStatus) {
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load(); // coupe réellement le flux
+    releaseWake();
+    if (!keepStatus) setStatus('', currentId ? 'À l\u2019arrêt' : 'Hors ligne');
+}
+
+function toggle() {
+    if (!currentId) {
+        const first = document.activeElement && document.activeElement.classList.contains('card')
+            ? document.activeElement.id.replace('card-', '')
+            : stations[0].id;
+        playStation(first);
+        return;
+    }
+    if (isActive()) stopAudio(); else playStation(currentId);
+}
+
+function step(delta) {
+    let i = stations.findIndex(s => s.id === currentId);
+    if (i < 0) i = delta > 0 ? -1 : 0;
+    const next = stations[(i + delta + stations.length) % stations.length];
+    playStation(next.id);
+    focusCard(next.id);
+}
+
+btnMain.addEventListener('click', toggle);
+
+audio.addEventListener('playing', () => setStatus('live', 'En direct'));
+audio.addEventListener('waiting', () => { if (isActive()) setStatus('load', 'Mise en mémoire…'); });
+audio.addEventListener('error', () => { if (isActive()) tryNextUrl(); });
+audio.addEventListener('stalled', () => {
+    // flux figé : on laisse quelques secondes puis on bascule
+    setTimeout(() => { if (isActive() && audio.readyState < 3 && !audio.paused) tryNextUrl(); }, 8000);
+});
+
+/* ---------- Écran toujours allumé pendant l'écoute ---------- */
+async function requestWake() {
+    try {
+        if ('wakeLock' in navigator && !wakeLock) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            wakeLock.addEventListener('release', () => { wakeLock = null; });
+        }
+    } catch (e) {}
+}
+function releaseWake() {
+    try { if (wakeLock) wakeLock.release(); } catch (e) {}
+    wakeLock = null;
+}
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && isActive()) requestWake();
+});
+
+/* ---------- Commandes multimédia (télécommande, notifications) ---------- */
+function updateMediaSession(s) {
+    if (!('mediaSession' in navigator)) return;
+    try {
+        navigator.mediaSession.metadata = new MediaMetadata({ title: s.nom, artist: s.genre, album: 'Radios' });
+        navigator.mediaSession.setActionHandler('play', () => playStation(currentId));
+        navigator.mediaSession.setActionHandler('pause', () => stopAudio());
+        navigator.mediaSession.setActionHandler('stop', () => stopAudio());
+        navigator.mediaSession.setActionHandler('nexttrack', () => step(1));
+        navigator.mediaSession.setActionHandler('previoustrack', () => step(-1));
+    } catch (e) {}
+}
+
+/* ---------- Navigation à la télécommande (flèches) ---------- */
+function focusables() { return Array.from(document.querySelectorAll('.focusable')); }
+function focusCard(id) {
+    const el = document.getElementById('card-' + id);
+    if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+}
+
+function moveFocus(dir) {
+    const items = focusables();
+    const cur = document.activeElement;
+    if (!items.includes(cur)) {
+        // rien de sélectionné : on part de la station en cours, sinon de la première
+        const start = document.getElementById('card-' + currentId) || items.find(i => i.classList.contains('card'));
+        if (start) start.focus({ preventScroll: true });
+        return;
+    }
+    const r = cur.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let best = null, bestScore = Infinity;
+
+    items.forEach(el => {
+        if (el === cur) return;
+        const o = el.getBoundingClientRect();
+        const dx = (o.left + o.width / 2) - cx;
+        const dy = (o.top + o.height / 2) - cy;
+        let main, side;
+        if (dir === 'right') { if (dx <= r.width * 0.3) return; main = dx; side = Math.abs(dy); }
+        if (dir === 'left')  { if (dx >= -r.width * 0.3) return; main = -dx; side = Math.abs(dy); }
+        if (dir === 'down')  { if (dy <= r.height * 0.3) return; main = dy; side = Math.abs(dx); }
+        if (dir === 'up')    { if (dy >= -r.height * 0.3) return; main = -dy; side = Math.abs(dx); }
+        const score = main + side * 2.5;
+        if (score < bestScore) { bestScore = score; best = el; }
+    });
+
+    // Bout de ligne : on continue sur la station précédente / suivante (boucle)
+    if (!best && cur.classList.contains('card') && (dir === 'left' || dir === 'right')) {
+        const cards = items.filter(i => i.classList.contains('card'));
+        const i = cards.indexOf(cur);
+        best = cards[(i + (dir === 'right' ? 1 : -1) + cards.length) % cards.length];
+    }
+    // Bas de la grille : retour vers le haut
+    if (!best && cur.classList.contains('card') && dir === 'down') best = items.find(i => i.classList.contains('card'));
+
+    if (best) {
+        best.focus({ preventScroll: true });
+        best.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+}
+
+document.addEventListener('keydown', e => {
+    const map = { ArrowRight: 'right', ArrowLeft: 'left', ArrowDown: 'down', ArrowUp: 'up' };
+    if (map[e.key]) { e.preventDefault(); moveFocus(map[e.key]); return; }
+
+    switch (e.key) {
+        case 'MediaPlayPause':
+        case 'MediaPlay':
+        case 'MediaPause':
+            e.preventDefault(); toggle(); break;
+        case 'MediaStop':
+            e.preventDefault(); stopAudio(); break;
+        case 'MediaTrackNext':
+        case 'ChannelUp':
+        case 'PageDown':
+            e.preventDefault(); step(1); break;
+        case 'MediaTrackPrevious':
+        case 'ChannelDown':
+        case 'PageUp':
+            e.preventDefault(); step(-1); break;
+    }
+    // Entrée / OK : le bouton sélectionné gère déjà le clic nativement
+});
+
+/* ---------- Curseur masqué quand la souris ne bouge plus ---------- */
+let idleTimer;
+function wakeCursor() {
+    document.body.classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => document.body.classList.add('idle'), 3000);
+}
+document.addEventListener('mousemove', wakeCursor);
+wakeCursor();
+
+/* ---------- Démarrage : la sélection se place sur la dernière station écoutée ---------- */
+(function init() {
+    let last = null;
+    try { last = localStorage.getItem('radio:last'); } catch (e) {}
+    const id = stations.some(s => s.id === last) ? last : stations[0].id;
+    const el = document.getElementById('card-' + id);
+    if (el) el.focus({ preventScroll: true });
+})();
+</script>
+</body>
+</html>
