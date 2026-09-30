@@ -186,12 +186,65 @@
         box-shadow: 0 0 0 3px var(--text);
     }
 
-    /* ---------- Mode veille ---------- */
-    .veille { position: fixed; inset: 0; z-index: 100; background: #000; }
+    /* ---------- Mode veille : ambiance animée ---------- */
+    .veille {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: #04060d;
+        overflow: hidden;
+    }
     .veille[hidden] { display: none; }
-    .veille-in { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-    .veille-time { font-size: 4rem; font-weight: 300; color: #56617f; font-variant-numeric: tabular-nums; letter-spacing: 0.03em; }
-    .veille-name { font-size: 1.2rem; color: #414b68; }
+
+    /* Aurores : grands voiles colorés qui dérivent lentement */
+    .veille .blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        opacity: 0.55;
+        will-change: transform;
+    }
+    .blob.b1 { width: 55vmax; height: 55vmax; background: radial-gradient(circle at 30% 30%, #14524a, transparent 70%); animation: drift1 46s ease-in-out infinite alternate; }
+    .blob.b2 { width: 48vmax; height: 48vmax; background: radial-gradient(circle at 60% 40%, #1b2f6e, transparent 70%); animation: drift2 58s ease-in-out infinite alternate; }
+    .blob.b3 { width: 40vmax; height: 40vmax; background: radial-gradient(circle at 50% 50%, #3a2a6b, transparent 70%); animation: drift3 39s ease-in-out infinite alternate; }
+    @keyframes drift1 { from { transform: translate(-12vmax, -8vmax) scale(1); } to { transform: translate(14vmax, 10vmax) scale(1.25); } }
+    @keyframes drift2 { from { transform: translate(18vmax, 6vmax) scale(1.15); } to { transform: translate(-14vmax, -12vmax) scale(0.9); } }
+    @keyframes drift3 { from { transform: translate(-6vmax, 16vmax) scale(0.95); } to { transform: translate(10vmax, -10vmax) scale(1.2); } }
+
+    /* Poussières lumineuses */
+    .veille canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    /* Voile sombre pour garder le confort visuel */
+    .veille .shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(4, 6, 13, 0.25), rgba(4, 6, 13, 0.75)); }
+
+    /* Horloge */
+    .veille-in {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+        text-shadow: 0 0 2.5rem rgba(92, 225, 198, 0.25);
+        transition: left 1.6s ease, top 1.6s ease;   /* dérive douce anti-marquage */
+    }
+    .veille-time {
+        font-size: 5.5rem;
+        font-weight: 200;
+        letter-spacing: 0.05em;
+        font-variant-numeric: tabular-nums;
+        color: #e8ecff;
+        animation: glow 7s ease-in-out infinite alternate;
+    }
+    @keyframes glow { from { opacity: 0.75; } to { opacity: 1; } }
+    .veille-name { font-size: 1.3rem; font-weight: 400; letter-spacing: 0.08em; color: #8b98c9; }
+    .veille-eq { display: flex; align-items: flex-end; gap: 4px; height: 0.9rem; margin-top: 0.6rem; }
+    .veille-eq i { width: 4px; border-radius: 2px; background: var(--accent); opacity: 0.8; animation: bounce 0.9s infinite ease-in-out alternate; }
+    .veille-eq i:nth-child(1) { animation-delay: 0s; }
+    .veille-eq i:nth-child(2) { animation-delay: 0.4s; }
+    .veille-eq i:nth-child(3) { animation-delay: 0.15s; }
+    .veille-eq i:nth-child(4) { animation-delay: 0.5s; }
+    .veille-eq i:nth-child(5) { animation-delay: 0.25s; }
+    .veille-eq[hidden] { display: none; }
 
     /* ---------- Tablette portrait ---------- */
     @media (min-width: 700px) {
@@ -226,8 +279,8 @@
         .card { min-height: 0; padding: 0.5rem; scroll-margin: 0; }
         .card .name { font-size: 1.35rem; }
         .card .genre { font-size: 0.9rem; }
-        .veille-time { font-size: 6rem; }
-        .veille-name { font-size: 1.5rem; }
+        .veille-time { font-size: 8rem; }
+        .veille-name { font-size: 1.6rem; }
     }
     @media (prefers-reduced-motion: reduce) {
         * { animation: none !important; transition: none !important; }
@@ -271,11 +324,17 @@
     <div class="grid" id="grid" role="list"></div>
 </main>
 
-<!-- Mode veille : écran quasi noir, heure + station -->
+<!-- Mode veille : ambiance aurore + poussières + horloge -->
 <div class="veille" id="veille" hidden>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <canvas id="veilleCanvas"></canvas>
+    <div class="shade"></div>
     <div class="veille-in" id="veilleIn">
         <div class="veille-time" id="veilleTime">--:--</div>
         <div class="veille-name" id="veilleName"></div>
+        <div class="veille-eq" id="veilleEq" hidden><i></i><i></i><i></i><i></i><i></i></div>
     </div>
 </div>
 
@@ -318,7 +377,7 @@ const stations = [
         'https://stream.chantefrance.com/'
     ]},
     { id: 'cheriefm', nom: 'Chérie FM', genre: 'Pop / Love', urls: [
-        'https://streaming.nrjaudio.fm/ouuku85n3nje'
+        'https://streaming.nrjaudio.fm/ouoku85n3nje'
     ]},
     { id: 'europe1', nom: 'Europe 1', genre: 'Talk / Info', urls: [
         'https://europe1.lmn.fm/europe1.mp3',
@@ -711,7 +770,7 @@ function tickClock() {
     $('clockTime').textContent = hhmm;
     $('veilleTime').textContent = hhmm;
     $('clockDate').textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-    if (veilleOn) placeVeille();   // l'heure change de place chaque minute (évite de marquer l'écran)
+    if (veilleOn) placeVeille();   // l'heure dérive doucement (évite de marquer l'écran)
 }
 setInterval(tickClock, 1000);
 
@@ -734,33 +793,81 @@ async function loadWeather() {
 }
 setInterval(loadWeather, CONFIG.meteoRafraichirMin * 60000);
 
-/* ---------- Mode veille ---------- */
-const veille = $('veille'), veilleIn = $('veilleIn');
-let veilleOn = false, veilleTimer = null, wokeAt = 0;
+/* ---------- Mode veille : aurores + poussières + horloge ---------- */
+const veille = $('veille'), veilleIn = $('veilleIn'), veilleCanvas = $('veilleCanvas'),
+      veilleCtx = veilleCanvas.getContext('2d');
+let veilleOn = false, veilleTimer = null, wokeAt = 0, veilleRaf = null, dust = [];
 
 function armVeille() {
     clearTimeout(veilleTimer);
     veilleTimer = setTimeout(enterVeille, CONFIG.veilleMinutes * 60000);
 }
+
+/* Dérive douce de l'horloge (anti-marquage d'écran), avec transition fluide */
 function placeVeille() {
-    veilleIn.style.left = (6 + Math.random() * 40) + '%';
-    veilleIn.style.top  = (10 + Math.random() * 45) + '%';
+    veilleIn.style.left = (30 + Math.random() * 20) + '%';
+    veilleIn.style.top  = (28 + Math.random() * 22) + '%';
 }
+
+/* Poussières lumineuses dérivantes */
+function initDust() {
+    const n = Math.min(90, Math.max(35, Math.round(innerWidth / 22)));
+    dust = Array.from({ length: n }, () => ({
+        x: Math.random(), y: Math.random(),
+        r: 0.6 + Math.random() * 2.2,
+        vx: (Math.random() - 0.5) * 0.00012,
+        vy: -(0.00005 + Math.random() * 0.00022),
+        a: 0.15 + Math.random() * 0.45,
+        ph: Math.random() * Math.PI * 2,
+        sp: 0.3 + Math.random() * 0.8
+    }));
+}
+function sizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    veilleCanvas.width = innerWidth * dpr;
+    veilleCanvas.height = innerHeight * dpr;
+    veilleCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function drawDust(t) {
+    veilleCtx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const p of dust) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < -0.02) { p.y = 1.02; p.x = Math.random(); }
+        if (p.x < -0.02) p.x = 1.02; else if (p.x > 1.02) p.x = -0.02;
+        const tw = 0.55 + 0.45 * Math.sin(t * 0.001 * p.sp + p.ph);   // scintillement
+        veilleCtx.globalAlpha = p.a * tw;
+        veilleCtx.fillStyle = p.r > 1.8 ? '#9fb4ff' : '#cfe8ff';
+        veilleCtx.beginPath();
+        veilleCtx.arc(p.x * innerWidth, p.y * innerHeight, p.r, 0, Math.PI * 2);
+        veilleCtx.fill();
+    }
+    veilleCtx.globalAlpha = 1;
+    veilleRaf = requestAnimationFrame(drawDust);
+}
+
 function enterVeille() {
     veilleOn = true;
     const s = curStation();
     $('veilleName').textContent = s && isActive() ? s.nom : '';
+    $('veilleEq').hidden = !(s && isActive());
     placeVeille();
+    sizeCanvas();
+    initDust();
     veille.hidden = false;
     document.body.classList.add('sleeping');
+    veilleRaf = requestAnimationFrame(drawDust);
 }
 function wakeVeille() {
     veilleOn = false;
     veille.hidden = true;
     document.body.classList.remove('sleeping');
+    if (veilleRaf) cancelAnimationFrame(veilleRaf);
+    veilleRaf = null;
     wokeAt = Date.now();
     armVeille();
 }
+addEventListener('resize', () => { if (veilleOn) sizeCanvas(); });
+
 const passKeys = ['MediaPlayPause', 'MediaPlay', 'MediaPause', 'MediaStop', 'MediaTrackNext', 'MediaTrackPrevious', 'ChannelUp', 'ChannelDown'];
 
 document.addEventListener('keydown', e => {
@@ -771,7 +878,7 @@ document.addEventListener('keydown', e => {
     } else armVeille();
 }, true);
 document.addEventListener('keyup', e => { if (Date.now() - wokeAt < 400) e.preventDefault(); }, true);
-['mousedown', 'touchstart'].forEach(t => document.addEventListener(t, () => {
+['mousedown', 'touchstart'].forEach(t => document.addEventListener(t => () => {
     if (veilleOn) wakeVeille(); else armVeille();
 }, { capture: true, passive: true }));
 document.addEventListener('click', e => {
