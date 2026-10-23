@@ -247,9 +247,34 @@
     .veille-eq i:nth-child(5) { animation-delay: 0.25s; }
     .veille-eq[hidden] { display: none; }
 
+    /* ---------- Mobile : tout tient sur un seul écran, sans défilement ---------- */
+    @media (max-width: 699px) {
+        html { font-size: clamp(12px, min(3.8vw, 2.4vh), 18px); }
+        body {
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 1.2vh 3.5vw 1.6vh;
+        }
+        .top { position: static; background: none; padding: 0 0 1.2vh; }
+        .now-name { font-size: 1.25rem; }
+        .art { width: 3rem; height: 3rem; }
+        .btn-main { width: 3rem; height: 3rem; font-size: 1.3rem; }
+        main { flex: 1; min-height: 0; }
+        .grid {
+            height: 100%;
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: 1fr;
+            gap: 0.5rem;
+            padding: 0;
+        }
+        .card { min-height: 0; padding: 0.4rem 0.3rem; scroll-margin: 0; }
+        .card .name { font-size: 0.95rem; }
+        .card .genre { font-size: 0.7rem; }
+    }
     /* ---------- Tablette portrait ---------- */
     @media (min-width: 700px) {
-        .grid { grid-template-columns: repeat(3, 1fr); }
         .clock small, .wx small { display: block; }
     }
 
@@ -348,6 +373,11 @@ const CONFIG = {
     meteo: { lat: 49.96, lon: 2.33 },                   // coordonnées pour la météo (Open-Meteo)
     meteoRafraichirMin: 15
 };
+
+/* Écran tactile (téléphone / tablette) : on laisse l'écran s'éteindre tout seul
+   pendant la lecture (le son continue grâce à Media Session), pas de wake lock
+   ni d'écran de veille intégré. */
+const IS_TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
 
 /* Météo : icônes selon le code WMO */
 const WX = {
@@ -670,6 +700,7 @@ async function getCover(artist, title) {
 
 /* ---------- Écran allumé pendant l'écoute ---------- */
 async function requestWake() {
+    if (IS_TOUCH) return;   // mobile : pas de wake lock, l'écran s'éteint et le son continue
     try {
         if ('wakeLock' in navigator && !wakeLock) {
             wakeLock = await navigator.wakeLock.request('screen');
@@ -800,6 +831,7 @@ const veille = $('veille'), veilleIn = $('veilleIn'), veilleCanvas = $('veilleCa
 let veilleOn = false, veilleTimer = null, wokeAt = 0, veilleRaf = null, dust = [];
 
 function armVeille() {
+    if (IS_TOUCH) return;   // mobile : pas d'écran de veille intégré (l'écran s'éteint naturellement)
     clearTimeout(veilleTimer);
     veilleTimer = setTimeout(enterVeille, CONFIG.veilleMinutes * 60000);
 }
