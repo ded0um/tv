@@ -3,7 +3,7 @@
   "name": "tv (by Dedoum)",
   "short_name": "tv",
   "description": "tv",
-  "start_url": "https://ded0um.github.io/tv/?app=tv",
+  "start_url": "https://ded0um.github.io/tv/",
   "scope": "https://ded0um.github.io/tv/",
   "display": "standalone",
   "background_color": "#111215",
