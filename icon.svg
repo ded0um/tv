@@ -1,0 +1,131 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="turquoise" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a0fff0"/>
+      <stop offset="50%" stop-color="#5ce1c6"/>
+      <stop offset="100%" stop-color="#19a990"/>
+    </linearGradient>
+    <linearGradient id="dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1b2544"/>
+      <stop offset="100%" stop-color="#0b1120"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#718096"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Fond bleu nuit -->
+  <rect width="512" height="512" fill="#0b1120"/>
+
+  <!-- Cercle extérieur turquoise -->
+  <circle cx="256" cy="256" r="249" fill="url(#turquoise)"/>
+  <circle cx="256" cy="256" r="235" fill="url(#dark)"
+          stroke="#5ce1c6" stroke-width="3"/>
+
+  <!-- Ondes radio -->
+  <g fill="none" stroke="url(#turquoise)" stroke-width="10"
+     stroke-linecap="round" filter="url(#glow)">
+    <path d="M174 122 A116 116 0 0 1 338 122"/>
+    <path d="M197 146 A83 83 0 0 1 315 146"/>
+    <path d="M221 169 A50 50 0 0 1 291 169"/>
+  </g>
+
+  <!-- Arceau du casque -->
+  <path d="M151 242 V211 A105 105 0 0 1 361 211 V242"
+        fill="none" stroke="url(#silver)" stroke-width="20"
+        stroke-linecap="round"/>
+  <path d="M151 242 V211 A105 105 0 0 1 361 211 V242"
+        fill="none" stroke="#5ce1c6" stroke-width="5"
+        stroke-linecap="round"/>
+
+  <!-- Oreillettes -->
+  <rect x="132" y="220" width="43" height="94" rx="15"
+        fill="url(#silver)" stroke="#5ce1c6" stroke-width="4"/>
+  <rect x="337" y="220" width="43" height="94" rx="15"
+        fill="url(#silver)" stroke="#5ce1c6" stroke-width="4"/>
+  <rect x="143" y="232" width="20" height="69" rx="9" fill="#141c33"/>
+  <rect x="349" y="232" width="20" height="69" rx="9" fill="#141c33"/>
+
+  <!-- Micro -->
+  <rect x="207" y="166" width="98" height="167" rx="47"
+        fill="url(#silver)" stroke="#5ce1c6" stroke-width="4"/>
+  <rect x="217" y="177" width="78" height="142" rx="38"
+        fill="#141c33" stroke="#2a3760" stroke-width="2"/>
+
+  <!-- Grille du micro -->
+  <g fill="#5ce1c6">
+    <circle cx="235" cy="194" r="4"/>
+    <circle cx="256" cy="194" r="4"/>
+    <circle cx="277" cy="194" r="4"/>
+    <circle cx="229" cy="210" r="4"/>
+    <circle cx="250" cy="210" r="4"/>
+    <circle cx="271" cy="210" r="4"/>
+    <circle cx="284" cy="210" r="4"/>
+    <circle cx="235" cy="226" r="4"/>
+    <circle cx="256" cy="226" r="4"/>
+    <circle cx="277" cy="226" r="4"/>
+    <circle cx="229" cy="242" r="4"/>
+    <circle cx="250" cy="242" r="4"/>
+    <circle cx="271" cy="242" r="4"/>
+    <circle cx="284" cy="242" r="4"/>
+    <circle cx="235" cy="258" r="4"/>
+    <circle cx="256" cy="258" r="4"/>
+    <circle cx="277" cy="258" r="4"/>
+    <circle cx="250" cy="274" r="4"/>
+    <circle cx="271" cy="274" r="4"/>
+  </g>
+
+  <!-- Support du micro -->
+  <path d="M192 269 V294 A64 64 0 0 0 320 294 V269"
+        fill="none" stroke="url(#silver)" stroke-width="10"
+        stroke-linecap="round"/>
+  <path d="M256 351 V364" stroke="url(#silver)" stroke-width="12"
+        stroke-linecap="round"/>
+  <path d="M222 366 H290" stroke="#5ce1c6" stroke-width="8"
+        stroke-linecap="round"/>
+
+  <!-- Ondes sonores latérales -->
+  <g fill="none" stroke="#5ce1c6" stroke-width="5"
+     stroke-linecap="round" filter="url(#glow)">
+    <path d="M110 246 Q91 263 110 280"/>
+    <path d="M92 232 Q63 263 92 294"/>
+    <path d="M402 246 Q421 263 402 280"/>
+    <path d="M420 232 Q449 263 420 294"/>
+  </g>
+
+  <!-- Nom DEDOUM -->
+  <text x="256" y="418"
+        text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="53"
+        font-weight="900"
+        letter-spacing="2"
+        fill="#f4f6ff"
+        stroke="#5ce1c6"
+        stroke-width="1.5"
+        paint-order="stroke fill">DEDOUM</text>
+
+  <!-- RADIO -->
+  <text x="256" y="457"
+        text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="29"
+        font-weight="900"
+        letter-spacing="8"
+        fill="url(#turquoise)">RADIO</text>
+
+  <!-- Soulignement lumineux -->
+  <path d="M145 470 Q256 488 367 470"
+        fill="none" stroke="#5ce1c6" stroke-width="4"
+        stroke-linecap="round" filter="url(#glow)"/>
+</svg>
