@@ -1,0 +1,20 @@
+{
+  "id": "https://ded0um.github.io/tv/",
+  "name": "tv (by Dedoum)",
+  "short_name": "tv",
+  "description": "Horloge",
+  "start_url": "https://ded0um.github.io/tv/?app=tv",
+  "scope": "https://ded0um.github.io/tv/",
+  "display": "standalone",
+  "background_color": "#111215",
+  "theme_color": "#111215",
+  "orientation": "any",
+  "icons": [
+  {
+    "src": "icon.svg",
+    "sizes": "any",
+    "type": "image/svg+xml",
+    "purpose": "any maskable"
+  }
+]
+}
