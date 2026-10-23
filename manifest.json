@@ -2,7 +2,7 @@
   "id": "https://ded0um.github.io/tv/",
   "name": "tv (by Dedoum)",
   "short_name": "tv",
-  "description": "Horloge",
+  "description": "tv",
   "start_url": "https://ded0um.github.io/tv/?app=tv",
   "scope": "https://ded0um.github.io/tv/",
   "display": "standalone",
