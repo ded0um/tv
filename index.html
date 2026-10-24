@@ -491,6 +491,11 @@ function setStatus(state, text) {
         c.classList.toggle('playing', c.id === 'card-' + currentId && busy);
         c.classList.toggle('live', on);
     });
+    /* Indiquer à l'OS qu'une lecture est active : l'audio n'est pas coupé
+       quand on change d'application ou verrouille l'écran. */
+    if ('mediaSession' in navigator) {
+        try { navigator.mediaSession.playbackState = busy ? 'playing' : 'paused'; } catch (e) {}
+    }
 }
 function isActive() { return !!audio.getAttribute('src'); }
 function curStation() { return stations.find(x => x.id === currentId); }
@@ -557,6 +562,9 @@ function tryNextUrl() {
 
 function stopAudio(keepStatus) {
     stopMeta();
+    if ('mediaSession' in navigator) {
+        try { navigator.mediaSession.playbackState = 'paused'; } catch (e) {}
+    }
     audio.pause();
     audio.removeAttribute('src');
     audio.load();
@@ -672,6 +680,17 @@ function applyTitle(raw) {
     const title  = i > 0 ? raw.slice(i + 3).trim() : raw;
     showTrack(artist ? artist + ' \u2014 ' + title : title);
     setArt(null);
+    /* Met à jour l'écran de verrouillage / tableau de bord de la voiture
+       (titre et artiste en cours au lieu du nom de la station). */
+    if ('mediaSession' in navigator) {
+        try {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: title || raw,
+                artist: artist || s.nom,
+                album: s.nom
+            });
+        } catch (e) {}
+    }
     if (artist) getCover(artist, title).then(url => { if (url && raw === lastTrackKey) setArt(url); });
 }
 
