@@ -2,8 +2,8 @@
 {
   "id": "/tv/",
   "name": "radio (by Dedoum)",
-  "short_name": "radio",
-  "description": "radio",
+  "short_name": "Radio",
+  "description": "Radio",
   "start_url": "/tv/",
   "scope": "/tv/",
   "display": "standalone",
