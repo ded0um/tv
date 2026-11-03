@@ -433,7 +433,8 @@
 const CONFIG = {
     veilleMinutes: 5,                                   // inactivité avant l'écran de veille
     meteo: { lat: 49.96, lon: 2.33 },                   // coordonnées pour la météo (Open-Meteo)
-    meteoRafraichirMin: 15
+    meteoRafraichirMin: 15,
+    fluxAutoHeures: 12                                  // durée du cache des flux découverts automatiquement
 };
 
 /* Écran tactile (téléphone / tablette) : on laisse l'écran s'éteindre tout seul
@@ -521,6 +522,41 @@ const stations = [
     ]}
 ];
 stations.sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+
+/* ---------- Flux auto-corrigés ----------
+   Certains groupes (NRJ…) font tourner les jetons de leurs URLs : un flux
+   qui marche aujourd'hui peut mourir dans quelques mois. Au lancement, on
+   interroge la base communautaire radio-browser.info (ouverte, sans clé) et
+   on place l'URL résolue du jour en tête de liste. En cas d'échec réseau,
+   on garde simplement les URLs codées en dur. */
+const fluxAuto = {};          // id -> URL découverte
+function urlsOf(s) { return fluxAuto[s.id] ? [fluxAuto[s.id], ...s.urls] : s.urls; }
+
+async function discoverFlux(s) {
+    /* Cache : une découverte toutes les N heures, pas à chaque lancement */
+    try {
+        const c = JSON.parse(localStorage.getItem('radio:flux:' + s.id) || 'null');
+        if (c && Date.now() - c.at < CONFIG.fluxAutoHeures * 3600000) { fluxAuto[s.id] = c.url; return; }
+    } catch (e) {}
+
+    const ctl = new AbortController();
+    const to = setTimeout(() => ctl.abort(), 8000);
+    try {
+        const r = await fetch('https://de1.api.radio-browser.info/json/stations/search?limit=15&hidebroken=true&name=' +
+            encodeURIComponent(s.nom), { signal: ctl.signal, headers: { 'User-Agent': 'radios-tv' } });
+        const list = await r.json();
+        /* On prend la première station française qui pointe vers le bon domaine */
+        const hit = (list || []).find(x =>
+            x.country_code === 'FR' && /^https?:\/\//.test(x.url_resolved || ''));
+        if (hit && hit.url_resolved) {
+            fluxAuto[s.id] = hit.url_resolved;
+            try { localStorage.setItem('radio:flux:' + s.id, JSON.stringify({ url: hit.url_resolved, at: Date.now() })); } catch (e) {}
+        }
+    } catch (e) {
+        /* pas grave : on garde les URLs codées */
+    } finally { clearTimeout(to); }
+}
+function refreshFlux() { stations.forEach(s => discoverFlux(s)); }
 
 /* ---------- Éléments ---------- */
 const $ = id => document.getElementById(id);
@@ -610,7 +646,8 @@ function startCurrent() {
     const s = curStation();
     if (!s) return;
     setStatus('load', 'Connexion…');
-    audio.src = s.urls[urlIndex];
+    const list = urlsOf(s);
+    audio.src = list[Math.min(urlIndex, list.length - 1)];
     audio.load();
     const p = audio.play();
     if (p) p.catch(err => {
@@ -624,7 +661,8 @@ function startCurrent() {
 function tryNextUrl() {
     const s = curStation();
     if (!s) return;
-    if (urlIndex < s.urls.length - 1) { urlIndex++; startCurrent(); }
+    const list = urlsOf(s);
+    if (urlIndex < list.length - 1) { urlIndex++; startCurrent(); }
     else { stopAudio(true); setStatus('err', 'Flux indisponible'); }
 }
 
@@ -758,7 +796,7 @@ async function pollMeta() {
     metaCtl = ctl;
     const to = setTimeout(() => ctl.abort(), 12000);
     try {
-        const raw = await readIcy(s.urls[urlIndex], ctl.signal);
+        const raw = await readIcy(urlsOf(s)[urlIndex] || s.urls[0], ctl.signal);
         if (id === currentId && raw !== null) applyTitle(raw);
     } catch (e) {
         if (id === currentId && e.name !== 'AbortError') { metaFail.add(id); stopMeta(); }
@@ -1076,6 +1114,7 @@ document.addEventListener('mousemove', wakeCursor);
 (function init() {
     tickClock();
     loadWeather();
+    refreshFlux();       // cherche les flux à jour (base radio-browser)
     armVeille();
     wakeCursor();
     let last = null;
